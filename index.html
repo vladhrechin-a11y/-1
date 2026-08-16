@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Безпека Поруч</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#12121c">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Безпека Поруч">
+
+<style>
+  :root {
+    --bg:        #12121c;
+    --surface:   #1b1b29;
+    --surface-2: #23233544;
+    --line:      #2b2b3f;
+    --text:      #eef0f5;
+    --text-dim:  #9a9bb0;
+    --medical:   #ff5165;
+    --medical-dim: #ff516522;
+    --practical: #f2a93c;
+    --practical-dim: #f2a93c22;
+    --mono: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    height: 100%;
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  #offline-banner {
+    position: fixed;
+    top: env(safe-area-inset-top); left: 0; right: 0;
+    background: var(--medical);
+    color: #fff;
+    text-align: center;
+    padding: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    display: none;
+    z-index: 30;
+  }
+  #offline-banner.show { display: block; }
+
+  /* ---------- HEADER ---------- */
+
+  header {
+    padding: 20px 20px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .12em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  h1 {
+    margin: 6px 0 0;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -.01em;
+  }
+
+  /* ---------- HOME: SECTION GRID ---------- */
+
+  main { padding: 4px 16px 40px; }
+
+  .category-block { margin-top: 22px; }
+  .category-title {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 0 4px 10px;
+  }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px 14px;
+    text-align: left;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 116px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent, var(--practical));
+  }
+  .card .icon {
+    font-size: 26px;
+    line-height: 1;
+  }
+  .card .name {
+    font-size: 14.5px;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  .card:active { transform: scale(.97); }
+
+  .card.medical { --accent: var(--medical); }
+  .card.practical { --accent: var(--practical); }
+
+  /* ---------- DETAIL VIEW ---------- */
+
+  #detail {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    transform: translateX(100%);
+    transition: transform .28s ease;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+  }
+  #detail.open { transform: translateX(0); }
+
+  .detail-header {
+    padding: calc(env(safe-area-inset-top) + 14px) 16px 16px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface);
+  }
+  .back-btn {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .detail-header .icon { font-size: 22px; }
+  .detail-header .title { font-size: 17px; font-weight: 800; }
+  .detail-header .desc { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
+
+  .steps {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 16px 60px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .step {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .step-num {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--bg);
+    background: var(--accent, var(--practical));
+    min-width: 30px; height: 30px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-body { flex: 1; min-width: 0; }
+  .step-title {
+    font-size: 15.5px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .step-text {
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: #dcdde6;
+    white-space: pre-wrap;
+  }
+  .step-photo {
+    margin-top: 10px;
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    display: block;
+    background: var(--surface);
+  }
+  .step-video {
+    margin-top: 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--practical);
+    text-decoration: none;
+    border: 1px solid var(--line);
+    padding: 8px 12px;
+    border-radius: 8px;
+  }
+
+  /* ---------- STATES ---------- */
+
+  .state {
+    padding: 60px 24px;
+    text-align: center;
+    color: var(--text-dim);
+  }
+  .state .big { font-size: 32px; margin-bottom: 10px; }
+  .state p { font-size: 14px; line-height: 1.5; }
+  .retry-btn {
+    margin-top: 16px;
+    background: var(--practical);
+    color: #1a1200;
+    border: none;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 20px;
+    border-radius: 10px;
+  }
+
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface) 25%, #23233d 37%, var(--surface) 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+    border-radius: 14px;
+    min-height: 116px;
+  }
+  @keyframes shimmer {
+    0% { background-position: 100% 50%; }
+    100% { background-position: 0 50%; }
+  }
+</style>
+</head>
+<body>
+
+<div id="offline-banner">Немає з'єднання з інтернетом</div>
+
+<header>
+  <div class="eyebrow">Довідник дій</div>
+  <h1>Безпека Поруч</h1>
+</header>
+
+<main id="home">
+  <div class="card-grid" id="loading-grid">
+    <div class="skeleton"></div><div class="skeleton"></div>
+    <div class="skeleton"></div><div class="skeleton"></div>
+  </div>
+</main>
+
+<div id="detail">
+  <div class="detail-header">
+    <button class="back-btn" id="back-btn" aria-label="Назад">←</button>
+    <div>
+      <div class="title" id="detail-title"><span class="icon" id="detail-icon"></span> <span id="detail-name"></span></div>
+      <div class="desc" id="detail-desc"></div>
+    </div>
+  </div>
+  <div class="steps" id="steps"></div>
+</div>
+
+<script>
+  const API_URL = "https://script.google.com/macros/s/AKfycbw_w7ZRfn8ak74aMRyT9KndOpZzuDbOZd6jN9uL9KbJ49xBVMOFX2tlRKs7TZ8V9Yh4YQ/exec";
+  const CACHE_KEY = "bezpeka-poruch-data-v1";
+
+  const homeEl = document.getElementById('home');
+  const detailEl = document.getElementById('detail');
+  const stepsEl = document.getElementById('steps');
+  const offlineBanner = document.getElementById('offline-banner');
+
+  function accentClass(category) {
+    return category.includes('Домедичн') ? 'medical' : 'practical';
+  }
+
+  function driveImgUrl(photoId) {
+    return `https://drive.google.com/thumbnail?id=${photoId}&sz=w1000`;
+  }
+
+  function isYoutube(url) {
+    return /youtu\.?be/i.test(url);
+  }
+  function youtubeEmbed(url) {
+    const m = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{6,})/);
+    return m ? `https://www.youtube.com/embed/${m[1]}` : null;
+  }
+
+  function renderHome(data) {
+    homeEl.innerHTML = '';
+
+    const byCategory = {};
+    data.sections.forEach(s => {
+      const cat = s.Категорія || 'Інше';
+      (byCategory[cat] = byCategory[cat] || []).push(s);
+    });
+
+    Object.keys(byCategory).forEach(cat => {
+      const block = document.createElement('div');
+      block.className = 'category-block';
+
+      const title = document.createElement('div');
+      title.className = 'category-title';
+      title.textContent = cat;
+      block.appendChild(title);
+
+      const grid = document.createElement('div');
+      grid.className = 'card-grid';
+
+      byCategory[cat].forEach(section => {
+        const card = document.createElement('button');
+        card.className = `card ${accentClass(cat)}`;
+        card.innerHTML = `
+          <div class="icon">${section.Іконка || '•'}</div>
+          <div class="name">${section.Назва}</div>
+        `;
+        card.addEventListener('click', () => openSection(section, data));
+        grid.appendChild(card);
+      });
+
+      block.appendChild(grid);
+      homeEl.appendChild(block);
+    });
+  }
+
+  function openSection(section, data) {
+    const cat = section.Категорія || '';
+    const accent = accentClass(cat);
+
+    document.getElementById('detail-icon').textContent = section.Іконка || '';
+    document.getElementById('detail-name').textContent = section.Назва;
+    document.getElementById('detail-desc').textContent = section.Опис || '';
+
+    const steps = (data.content[section.ID] || []);
+
+    stepsEl.innerHTML = '';
+    stepsEl.style.setProperty('--accent', `var(--${accent})`);
+
+    if (steps.length === 0) {
+      stepsEl.innerHTML = `<div class="state"><div class="big">📭</div><p>Контент для цього розділу ще не додано.</p></div>`;
+    }
+
+    steps.forEach((step, i) => {
+      const num = [step.Крок, step.Підпункт].filter(Boolean).join('.') || (i + 1);
+
+      const el = document.createElement('div');
+      el.className = 'step';
+
+      let photoHtml = '';
+      if (step.ФотоID) {
+        photoHtml = `<img class="step-photo" loading="lazy" src="${driveImgUrl(step.ФотоID)}" alt="">`;
+      }
+
+      let videoHtml = '';
+      if (step.Відео) {
+        videoHtml = `<a class="step-video" href="${step.Відео}" target="_blank" rel="noopener">▶ Переглянути відео</a>`;
+      }
+
+      el.innerHTML = `
+        <div class="step-num" style="background:var(--${accent})">${num}</div>
+        <div class="step-body">
+          ${step.Заголовок ? `<div class="step-title">${step.Заголовок}</div>` : ''}
+          ${step.Текст ? `<div class="step-text">${step.Текст}</div>` : ''}
+          ${photoHtml}
+          ${videoHtml}
+        </div>
+      `;
+      stepsEl.appendChild(el);
+    });
+
+    detailEl.classList.add('open');
+    stepsEl.scrollTop = 0;
+  }
+
+  document.getElementById('back-btn').addEventListener('click', () => {
+    detailEl.classList.remove('open');
+  });
+
+  function renderError(message) {
+    homeEl.innerHTML = `
+      <div class="state">
+        <div class="big">⚠️</div>
+        <p>${message}</p>
+        <button class="retry-btn" onclick="location.reload()">Спробувати ще раз</button>
+      </div>
+    `;
+  }
+
+  async function loadData() {
+    try {
+      const res = await fetch(`${API_URL}?action=all`);
+      if (!res.ok) throw new Error('bad response');
+      const data = await res.json();
+      localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+      renderHome(data);
+    } catch (err) {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        renderHome(JSON.parse(cached));
+      } else {
+        renderError('Не вдалося завантажити дані. Перевірте інтернет-з\'єднання.');
+      }
+    }
+  }
+
+  function updateOnlineStatus() {
+    offlineBanner.classList.toggle('show', !navigator.onLine);
+  }
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+  updateOnlineStatus();
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch(console.error);
+    });
+  }
+
+  loadData();
+</script>
+
+</body>
+</html>
